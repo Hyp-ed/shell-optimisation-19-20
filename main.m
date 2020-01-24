@@ -30,7 +30,7 @@ fprintf("Establishing COMSOL Server LiveLink...\n")
 HOME = pwd;                                       % Store home directory
 cd('/Applications/COMSOL54/Multiphysics/mli');    % mli = MATLAB LiveLink Interface
 try % Catch error if COMSOL Server is already connected
-    mphstart('localhost', 2036, 'root', '1234');  % Server is running at localhost:2036, also passing credentials
+    mphstart('localhost', 2036, 'hyped', 'breakapod');  % Server is running at localhost:2036, also passing credentials
 catch ME
     if strcmp(ME.message, 'Already connected to a server')
         fprintf('COMSOL Server already connected\n');
