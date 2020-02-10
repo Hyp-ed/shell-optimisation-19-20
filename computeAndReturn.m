@@ -6,7 +6,21 @@ function [ f_total ] = computeAndReturn(controlpoints, model, params)
     fprintf("\nTrying: [ %.0f  %.0f ; %.0f  %.0f ; %.0f  %.0f ]\n", ...
             controlpoints(1), controlpoints(2), controlpoints(3), controlpoints(4), controlpoints(5), controlpoints(6));
     
-    %{
+    % call constraint function
+    % if statement to skip study if cineq are positive
+        
+    [cineq, ceq] = constraints(controlpoints,params);
+    
+    vio_c = 0; % Initialise constraint violation
+    
+    for i = 1:12
+        if cineq(i) > 0
+            vio_c = 1;
+        end
+    end
+        
+    if vio_c == 0
+    %
     %% Set COMSOL parameters 
     % Arguments: 'parameter name', parameter value
 
@@ -39,6 +53,7 @@ function [ f_total ] = computeAndReturn(controlpoints, model, params)
 
         % Print total force
         fprintf("  => %.2f N/m\n", f_total);
+        
     catch ME
         % Set drag ridiculously high if we get an error
         f_total = 999999;
@@ -56,17 +71,27 @@ function [ f_total ] = computeAndReturn(controlpoints, model, params)
 
     % Calculate bezier curve for given interval
     [bezierX,bezierY,~,~] = bezier(controlpoints,params);
-    
+    %{
     f_total = 0;
     [~,indexStart] = min(abs(bezierX-params.chassisStart));
-    [~,indexEnd] = min(abs(bezierX-params.chassisEnd));
+    [~,indexEnd] = min(abs(bezierX-params.mountingEnd));
+   %{ 
     for i = 1 : indexStart
         f_total = f_total + bezierY(i);
     end
+    %}
     for i = indexEnd : length(bezierX)
         f_total = f_total + bezierY(i);
     end
-    title(f_total);
-    fprintf("  => %.0f\n", f_total);
+    %}
     
+    
+    title(f_total); 
+    fprintf("  => %.3f\n", f_total);
+    
+    else if vio_c == 1
+        f_total = 999999;
+        fprintf("failed constraint");
+    end
+ 
 end

@@ -26,30 +26,46 @@ function [cineq, ceq] = constraints(controlpoints,params)
     % Calculate bezier curve for given interval
     [bezierX,bezierY,bezierCPX,bezierCPY] = bezier(controlpoints,params);
     
+    
     %% Equality constraints
     
     ceq = []; % None because start and end points are fixed
     
     %% Inequality constraints
     % Set up loop and pre-allocate memory for inequality constraints
-    cineqX = zeros(1,(numberOfCineqChassis + numberOfCineqMounting + 7));
-    cineq  = zeros(1,(numberOfCineqChassis + numberOfCineqMounting + 7));
+    cineqX = zeros(1,(numberOfCineqChassis + numberOfCineqMounting + 2));
+    cineq  = zeros(1,(numberOfCineqChassis + numberOfCineqMounting + 2));
 
     % Populate intermediate inequality constraints for start
+    %{
     dx = startToBattery / numberOfCineqStart;
     x = params.chassisStart;
     for i = 1:(numberOfCineqStart)
         % Find closest index to given x
         [~, index] = min(abs(bezierX-x));
-        cineq(i) = - (bezierY(index) - params.chassisHeight);
+        cineq(i) = - (bezierY(index) - params.chassisHeight);   % Inequality constraint voilated if greater than 0
+        cineqX(i) = bezierX(index);
+        x = x + dx;
+    end
+    %}
+    
+        % Populate intermediate inequality constraints for mounting
+    dx = params.mountingLength / (numberOfCineqMounting-1);
+    x = params.mountingStart;
+    for i = 1:(numberOfCineqMounting)
+        % Find closest index to given x
+        [~, index] = min(abs(bezierX-x));
+        cineq(i) = -(bezierY(index) - params.mountingHeight);
         cineqX(i) = bezierX(index);
         x = x + dx;
     end
     
+    x = x - (dx);
+    
     % Populate intermediate inequality constraints for end
-    dx = batteryToEnd / numberOfCineqEnd;
-    x = params.mountingEnd + dx;
-    for i = (numberOfCineqStart + 1):(numberOfCineqChassis)
+    dx = batteryToEnd / (numberOfCineqEnd);
+    x = x + 1;
+    for i = (numberOfCineqMounting + 1):(numberOfCineqMounting + numberOfCineqChassis)
         % Find closest index to given x
         [~, index] = min(abs(bezierX-x));
         cineq(i) = - (bezierY(index) - params.chassisHeight);
@@ -57,30 +73,39 @@ function [cineq, ceq] = constraints(controlpoints,params)
         x = x + dx;
     end
     
+    %{
     % Populate intermediate inequality constraints for mounting
     dx = params.mountingLength / (numberOfCineqMounting-1);
     x = params.mountingStart;
     for i = (numberOfCineqChassis + 1):(numberOfCineqChassis + numberOfCineqMounting)
         % Find closest index to given x
         [~, index] = min(abs(bezierX-x));
-        cineq(i) = - (bezierY(index) - params.mountingHeight);
+        cineq(i) = -(bezierY(index) - params.mountingHeight);
         cineqX(i) = bezierX(index);
         x = x + dx;
     end
-       
-    % Constrain maximum pod height
-    cineq((numberOfCineqChassis + numberOfCineqMounting + 1)) = max(bezierY) - params.maxY;
+       %}
     
+    
+    % Constrain maximum pod height
+    cineq((numberOfCineqChassis + numberOfCineqMounting + 1)) = (max(bezierY) - params.maxY);
+    
+    % Constrain max height to mounting height
+   cineq((numberOfCineqChassis + numberOfCineqMounting + 2)) = -(max(bezierY) - params.mountingHeight);
+   
+    %{
     % Stay close to chassis at start and reinforce start
     [~, chassisStartIndex] = min(abs(bezierX - params.chassisStart)); % Find closest index to chassis end
-    cineq((numberOfCineqChassis + numberOfCineqMounting + 2)) = bezierY(chassisStartIndex) - (params.chassisHeight + 20);
-    cineq((numberOfCineqChassis + numberOfCineqMounting + 3)) = - (bezierY(chassisStartIndex-1) - params.chassisHeight); % Also consider point to the left of the start position since bezier can be inaccurate
+    cineq((numberOfCineqChassis + numberOfCineqMounting + 2)) = - (bezierY(chassisStartIndex) - (params.mountingHeight));
+    cineq((numberOfCineqChassis + numberOfCineqMounting + 3)) = - (bezierY(chassisStartIndex-1) - params.mountingHeight); % Also consider point to the left of the start position since bezier can be inaccurate
+    %{
     
     % Stay close to chassis at end and reinforce end
     [~, chassisEndIndex] = min(abs(bezierX - params.chassisEnd)); % Find closest index to chassis end
-    cineq((numberOfCineqChassis + numberOfCineqMounting + 4)) = bezierY(chassisEndIndex) - (params.chassisHeight + 15);
-    cineq((numberOfCineqChassis + numberOfCineqMounting + 5)) = - (bezierY(chassisEndIndex+1) - params.chassisHeight); % Also consider point to the right of the end position since bezier can be inaccurate
+    cineq((numberOfCineqChassis + numberOfCineqMounting + 2)) = bezierY(chassisEndIndex) - (params.chassisHeight + 15);
+    cineq((numberOfCineqChassis + numberOfCineqMounting + 3)) = - (bezierY(chassisEndIndex+1) - params.chassisHeight); % Also consider point to the right of the end position since bezier can be inaccurate
     
+    %
     % Stay close to baterry module at start
     [~, mountingStartIndex] = min(abs(bezierX - params.mountingStart)); % Find closest index to chassis end
     cineq((numberOfCineqChassis + numberOfCineqMounting + 6)) = bezierY(mountingStartIndex) - (params.mountingHeight + 15);
@@ -88,8 +113,8 @@ function [cineq, ceq] = constraints(controlpoints,params)
     % Stay close to baterry module at end
     [~, mountingEndIndex] = min(abs(bezierX - params.mountingEnd)); % Find closest index to chassis end
     cineq((numberOfCineqChassis + numberOfCineqMounting + 7)) = bezierY(mountingEndIndex) - (params.mountingHeight + 50);
-
-    
+%}
+    %}
     %% Plot
     currentfig = gcf;
     if currentfig.Number ~= 2
@@ -117,9 +142,10 @@ function [cineq, ceq] = constraints(controlpoints,params)
     ylim([plotMinY plotMaxY]);
     
     % Plot inequality constraint values
-    plot(cineqX(1:numberOfCineqStart),cineq(1:numberOfCineqStart),'Color','red','LineStyle','--');
-    plot(cineqX((numberOfCineqStart +1):numberOfCineqChassis),cineq((numberOfCineqStart +1):numberOfCineqChassis),'Color','red','LineStyle','--');
-    plot(cineqX((numberOfCineqChassis +1):(numberOfCineqChassis + numberOfCineqMounting)),cineq((numberOfCineqChassis +1):(numberOfCineqChassis + numberOfCineqMounting)),'Color','red','LineStyle','--');
+    plot(cineqX(1:5),cineq(1:5),'Color','red','LineStyle','--');
+    plot(cineqX(6:11),cineq(6:11),'Color','red','LineStyle','--');
+    %plot(params.chassisStart,cineq(12),'*','Color','red','LineStyle','--');
+    %plot(cineqX((numberOfCineqChassis +1):(numberOfCineqChassis + numberOfCineqMounting)),cineq((numberOfCineqChassis +1):(numberOfCineqChassis + numberOfCineqMounting)),'Color','red','LineStyle','--');
     
     % Draw plot while running
     drawnow;
