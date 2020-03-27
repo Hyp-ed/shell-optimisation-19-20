@@ -7,7 +7,7 @@
 %             becomes        -x(1) * x(2) + 10 <= 0
 %  @author Rafael Anderka, HypED 2018
 
-function [cineq, ceq] = constraints(controlpoints,params)
+function [cineq, ceq, clear, max_heightClear] = constraints(controlpoints,params)
     %% Params
     numberOfCineqChassis = 5;  % Number of inequality constraints for chassis (may affect accuracy)
     numberOfCineqMounting = 5; % Number of inequality constraints for mounting brackets
@@ -72,6 +72,12 @@ function [cineq, ceq] = constraints(controlpoints,params)
         cineqX(i) = bezierX(index);
         x = x + dx;
     end
+    
+    % Calculate vertical distance between chassis end and pod
+    [~, index] = min(abs(bezierX-params.chassisEnd));
+    clear = bezierY(index) - params.chassisHeight;
+    
+    max_heightClear = max(bezierY) - params.mountingHeight;
     
     %{
     % Populate intermediate inequality constraints for mounting

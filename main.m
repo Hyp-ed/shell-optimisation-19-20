@@ -12,10 +12,10 @@ params.n             = 5;                 % Number of control points
 params.head          = -1000;             % Fixed head point where y = 0
 params.tail          = 1000;              % Fixed tail point where y = 0
 params.baseY         = 0;                 % Y displacement of head and tail points
-params.maxY          = 450;               % Maximum height (constrained). Height: 375, Width: 330
+params.maxY          = 400;               % Maximum height (constrained). Height: 375, Width: 330
 params.chassisLength = 1500;               % Chassis length + 2 cm spiel
 params.chassisHeight = 151;               % Chassis height (Height: 251 (chassis height) - 130 (rail) + 30 (safety) = 151, Width: 260 (inner width) + 19 (shell thickness) + 20 (safety) - 70 (rail opening) = 229
-params.chassisStart  = params.head + 250; % Chassis start point
+params.chassisStart  = params.head + 200; % Chassis start point
 params.chassisEnd    = params.chassisStart + params.chassisLength; % Chassis end point
 
 params.mountingHeight = params.chassisHeight + 150; % Battery top module height
@@ -28,7 +28,8 @@ params.mountingEnd    = params.mountingStart + params.mountingLength; % Battery 
 %
 fprintf("Establishing COMSOL Server LiveLink...\n")
 HOME = pwd;                                       % Store home directory
-cd('/Applications/COMSOL55/Multiphysics/mli');    % mli = MATLAB LiveLink Interface
+cd('/usr/local/comsol55/multiphysics/mli'); 
+% mli = MATLAB LiveLink Interface
 try % Catch error if COMSOL Server is already connected
     mphstart('localhost', 2036, 'hyped', 'breakapod');  % Server is running at localhost:2036, also passing credentials
 catch ME
@@ -62,7 +63,7 @@ problem.options.PopulationSize = 300;                           % Number of para
 problem.options.MutationFcn = @mutationadaptfeasible;           % Set mutation function for constrained optimization
 problem.options.PlotFcns = {@gaplotbestf, @gaplotmaxconstr};    % Add plot
 problem.options.Display = 'iter';                               % Print iterations in command window
-problem.options.OutFunc = optimoptions('ga','OutputFcn',@gaoutfun);
+%problem.options.OutFunc = optimoptions('ga','OutputFcn',@gaoutfun);
 
 % Run the GA and store final values in x and fval
 fprintf("Starting GA...");

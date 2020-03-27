@@ -9,7 +9,7 @@ function [ f_total ] = computeAndReturn(controlpoints, model, params)
     % call constraint function
     % if statement to skip study if cineq are positive
         
-    [cineq, ceq] = constraints(controlpoints,params);
+    [cineq, ceq, clear, max_heightClear] = constraints(controlpoints,params);
     
     vio_c = 0; % Initialise constraint violation
     
@@ -59,7 +59,8 @@ function [ f_total ] = computeAndReturn(controlpoints, model, params)
         f_total = 999999;
 
         % Print total force
-        fprintf("  => ERROR");
+        fprintf("  => ERROR\n");
+        
     end
     
 
@@ -85,13 +86,26 @@ function [ f_total ] = computeAndReturn(controlpoints, model, params)
     end
     %}
     
+
     
     title(f_total); 
     fprintf("  => %.3f\n", f_total);
+    fprintf("Chassis clearance height: %f\n", clear);
+
+    fprintf("Max clearnace height: %f\n", max_heightClear);
     
+    f_total = f_total + clear + max_heightClear;
+    fprintf("Score: %f\n", f_total);
+    
+ 
     else if vio_c == 1
+     
         f_total = 999999;
-        fprintf("failed constraint");
+        fprintf("failed constraint\n");
+        
+        
+        fprintf("Chassis clearance height: %f\n", clear);
+        fprintf("Max clearance height: %f\n", max_heightClear);
     end
  
 end
