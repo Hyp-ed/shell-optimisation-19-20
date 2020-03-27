@@ -5,7 +5,7 @@
 %  NOTE: Inequality constraints are evaluated for <= 0
 %        e.g. the inequality x(1) * x(2) >= 10
 %             becomes        -x(1) * x(2) + 10 <= 0
-%  @author Rafael Anderka, HypED 2018
+%  @author Rafael Anderka, Ewan Shek HypED 2019
 
 function [cineq, ceq, clear, max_heightClear] = constraints(controlpoints,params)
     %% Params
